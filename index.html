@@ -1,322 +1,335 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>ClassTube</title>
+
+<style>
+
+.avatar{
+width:30px;
+height:30px;
+border-radius:50%;
+color:white;
+display:flex;
+justify-content:center;
+align-items:center;
+font-weight:bold;
+font-family:Arial;
+}
+
+.tabButton{
+padding:5px 10px;
+margin-right:5px;
+cursor:pointer;
+background:#CCC;
+border:1px solid #999;
+}
+
+.tabButton.active{
+background:#999;
+color:white;
+}
+
+#uploadSection{
+display:none;
+margin-top:10px;
+}
+
+</style>
+</head>
+
+<body bgcolor="#FFF" style="margin:0;font-family:Arial">
+
+<!-- HEADER -->
+
+<div id="userProfile" style="position:absolute;top:10px;right:15px;display:flex;align-items:center;gap:8px">
+
+<img id="userAvatar" style="width:34px;height:34px;border-radius:50%;display:none">
+
+<span id="usernameDisplay"></span>
+
+</div>
+
+<table width="100%" border="1">
+<tr>
+<td>
+
+<b>ClassTube</b>
+
+<span id="headerLinks" style="float:right;display:none">
+
+<a href="#" id="homeBtn">Home</a> |
+<a href="#" id="myProfileBtn">My Profile</a> |
+<a href="#" id="logoutBtn">Logout</a>
+
+</span>
+
+</td>
+</tr>
+</table>
+
+
+<!-- LOGIN -->
+
+<div id="loginSection" style="width:300px;margin:50px auto;background:#DDD;padding:10px;border:1px solid #999">
+
+<h2>Login / Sign Up</h2>
+
+<b>Sign Up</b><br><br>
+
+Username:<br>
+<input type="text" id="signupUsername"><br><br>
+
+Email:<br>
+<input type="email" id="signupEmail"><br><br>
+
+Birthdate:<br>
+<input type="date" id="signupBirthdate"><br><br>
+
+Password:<br>
+<input type="password" id="signupPassword"><br><br>
+
+<input type="button" value="Create Account" id="signupBtn"><br><br>
+
+<b>Login</b><br><br>
+
+Email:<br>
+<input type="email" id="loginEmail"><br><br>
+
+Password:<br>
+<input type="password" id="loginPassword"><br><br>
+
+<input type="button" value="Login" id="loginBtn"><br><br>
+
+<span id="status"></span>
+
+</div>
+
+
+<!-- FEED -->
+
+<div id="feedSection" style="display:none;padding:20px">
+
+<h3>Welcome, <span id="userEmail"></span></h3>
+
+<hr>
+
+<h3>Students:</h3>
+
+<div id="userList"></div>
+
+<h3>All Videos:</h3>
+
+<div id="videoList"></div>
+
+</div>
+
+
+<!-- PROFILE -->
+
+<div id="profileSection" style="display:none;padding:20px">
+
+<div id="tabs">
+
+<span id="profileTab" class="tabButton active">Profile</span>
+
+<span id="uploadTab" class="tabButton">Upload</span>
+
+</div>
+
+<div id="profileContent">
+
+Username: <b id="profileUsername"></b><br>
+
+Join date: <span id="profileJoinDate"></span><br><br>
+
+Bio:<br>
+
+<textarea id="bio" rows="5" cols="40"></textarea><br>
+
+<input type="button" value="Save Bio" id="saveBioBtn"><br><br>
+
+<span id="profileStatus"></span>
+
+</div>
+
+<div id="uploadSection">
+
+Title:<br>
+<input type="text" id="videoTitle"><br>
+
+Video URL:<br>
+<input type="text" id="videoURL"><br>
+
+<input type="button" value="Post Video" id="postVideoBtn"><br>
+
+</div>
+
+<h3>Uploaded Videos:</h3>
+
+<div id="userVideos"></div>
+
+</div>
+
+
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, collection, getDocs, addDoc, query, orderBy, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
+
 const firebaseConfig = {
-  apiKey:"AIzaSyC2QdW6Gq3dnFf2JL4-vET-68M6LvTJUvw",
-  authDomain:"classtube2-1436a.firebaseapp.com",
-  projectId:"classtube2-1436a",
-  storageBucket:"classtube2-1436a.firebasestorage.app",
-  messagingSenderId:"290016676161",
-  appId:"1:290016676161:web:1f88361dcb31ad31fd79c0"
+
+apiKey:"AIzaSyC2QdW6Gq3dnFf2JL4-vET-68M6LvTJUvw",
+authDomain:"classtube2-1436a.firebaseapp.com",
+projectId:"classtube2-1436a",
+storageBucket:"classtube2-1436a.firebasestorage.app",
+messagingSenderId:"290016676161",
+appId:"1:290016676161:web:1f88361dcb31ad31fd79c0"
+
 };
 
+
 const app = initializeApp(firebaseConfig);
+
 const auth = getAuth(app);
+
 const db = getFirestore(app);
 
-let currentUser = null;
+let currentUser=null;
 
 
-// SHOW SECTIONS
+
 function showSection(section){
-  document.getElementById("loginSection").style.display = (section==="login")?"block":"none";
-  document.getElementById("feedSection").style.display = (section==="feed")?"block":"none";
-  document.getElementById("profileSection").style.display = (section==="profile")?"block":"none";
+
+document.getElementById("loginSection").style.display=(section==="login")?"block":"none";
+document.getElementById("feedSection").style.display=(section==="feed")?"block":"none";
+document.getElementById("profileSection").style.display=(section==="profile")?"block":"none";
+
 }
 
 
-// HEADER
-document.getElementById("homeBtn").onclick = ()=>showSection('feed');
-document.getElementById("myProfileBtn").onclick = ()=>loadProfile();
-document.getElementById("logoutBtn").onclick = async ()=>{ await signOut(auth); };
+
+document.getElementById("homeBtn").onclick=()=>showSection('feed');
+
+document.getElementById("myProfileBtn").onclick=()=>loadProfile();
+
+document.getElementById("logoutBtn").onclick=async()=>{await signOut(auth);};
 
 
-// SIGNUP
-document.getElementById('signupBtn').onclick = async ()=>{
 
-  const username = document.getElementById('signupUsername').value.trim();
-  const email = document.getElementById('signupEmail').value.trim();
-  const password = document.getElementById('signupPassword').value;
+const status=document.getElementById("status");
 
-  try{
+const headerLinks=document.getElementById("headerLinks");
 
-    const userCred = await createUserWithEmailAndPassword(auth,email,password);
-
-    await setDoc(doc(db,"users",userCred.user.uid),{
-      username,
-      email,
-      bio:"",
-      createdAt:new Date()
-    });
-
-    document.getElementById('signupUsername').value="";
-    document.getElementById('signupEmail').value="";
-    document.getElementById('signupPassword').value="";
-
-    status.innerText="Account created!";
-
-  }catch(err){
-    status.innerText=err.message;
-  }
-
-};
+const userEmail=document.getElementById("userEmail");
 
 
-// LOGIN
-document.getElementById('loginBtn').onclick = async ()=>{
 
-  const email = document.getElementById('loginEmail').value.trim();
-  const password = document.getElementById('loginPassword').value;
+onAuthStateChanged(auth,async(user)=>{
 
-  try{
-    await signInWithEmailAndPassword(auth,email,password);
-  }catch(err){
-    status.innerText=err.message;
-  }
+if(!user){
 
-};
+showSection("login");
+headerLinks.style.display="none";
 
+}else{
 
-// AUTH STATE
-const status = document.getElementById('status');
-const headerLinks = document.getElementById('headerLinks');
-const userEmail = document.getElementById('userEmail');
+currentUser=user;
 
-onAuthStateChanged(auth, async (user)=>{
+showSection("feed");
 
-  if(!user){
+headerLinks.style.display="inline";
 
-    showSection("login");
-    headerLinks.style.display="none";
-    status.innerText="You must log in.";
+userEmail.innerText=user.email;
 
-  }else{
+await loadUsers();
+await loadVideos();
 
-    currentUser=user;
-
-    showSection("feed");
-    headerLinks.style.display="inline";
-    userEmail.innerText=user.email;
-
-    const userSnap = await getDoc(doc(db,"users",user.uid));
-
-    if(userSnap.exists()){
-      currentUser.username=userSnap.data().username;
-    }
-
-    await loadUsers();
-    await loadVideos();
-    await loadProfile();
-    await loadUserVideos();
-
-  }
+}
 
 });
 
 
-// LOAD USERS
+
 async function loadUsers(){
 
-  const snapshot = await getDocs(collection(db,"users"));
+const snapshot=await getDocs(collection(db,"users"));
 
-  let html="<table border='1' cellpadding='5'><tr><th>Username</th><th>Bio</th></tr>";
+let html="<table border='1' cellpadding='5'><tr><th>Username</th><th>Bio</th></tr>";
 
-  snapshot.forEach(docSnap=>{
+snapshot.forEach(docSnap=>{
 
-    const data = docSnap.data();
+const data=docSnap.data();
 
-    html+=`
-    <tr>
-      <td>${data.username}</td>
-      <td>${data.bio || ""}</td>
-    </tr>
-    `;
+html+=`<tr>
+<td>${data.username}</td>
+<td>${data.bio||""}</td>
+</tr>`;
 
-  });
+});
 
-  html+="</table>";
+html+="</table>";
 
-  document.getElementById('userList').innerHTML=html;
+document.getElementById("userList").innerHTML=html;
 
 }
 
 
-// LOAD VIDEOS
+
 async function loadVideos(){
 
-  const q=query(collection(db,"videos"),orderBy("createdAt","desc"));
-  const snapshot = await getDocs(q);
+const q=query(collection(db,"videos"),orderBy("createdAt","desc"));
 
-  let html="<table border='1' cellpadding='5'><tr><th>Title</th><th>Video</th><th>Uploader</th><th>Views</th></tr>";
+const snapshot=await getDocs(q);
 
-  snapshot.forEach(docSnap=>{
+let html="<table border='1' cellpadding='5'><tr><th>Title</th><th>Video</th><th>Uploader</th><th>Views</th></tr>";
 
-    const data = docSnap.data();
-    const videoId = docSnap.id;
+snapshot.forEach(docSnap=>{
 
-    let fileId = "";
+const data=docSnap.data();
 
-    if(data.url.includes("/d/")){
-      fileId = data.url.split("/d/")[1].split("/")[0];
-    }
+const videoId=docSnap.id;
 
-    const previewURL = `https://drive.google.com/file/d/${fileId}/preview`;
+let url=data.url;
 
-    html+=`
-    <tr>
-      <td>${data.title}</td>
-
-      <td>
-        <iframe
-        src="${previewURL}"
-        width="240"
-        height="135"
-        allow="autoplay"
-        onclick="incrementView('${videoId}')">
-        </iframe>
-      </td>
-
-      <td>${data.user}</td>
-
-      <td>${data.views || 0}</td>
-    </tr>
-    `;
-
-  });
-
-  html+="</table>";
-
-  document.getElementById('videoList').innerHTML=html;
-
+if(url.includes("/view")){
+url=url.replace("/view","/preview");
 }
 
+html+=`
 
-// INCREMENT VIEWS
-window.incrementView = async function(videoId){
+<tr>
 
-  const videoRef = doc(db,"videos",videoId);
+<td>${data.title}</td>
 
-  await updateDoc(videoRef,{
-    views: increment(1)
-  });
+<td>
+<iframe
+src="${url}"
+width="240"
+height="135"
+allow="autoplay">
+</iframe>
+</td>
 
-  await loadVideos();
+<td>${data.user}</td>
 
-}
+<td>${data.views||0}</td>
 
+</tr>
 
-// UPLOAD VIDEO
-document.getElementById('postVideoBtn').onclick = async ()=>{
+`;
 
-  const title = document.getElementById('videoTitle').value.trim();
-  const url = document.getElementById('videoURL').value.trim();
+});
 
-  if(!title || !url){
-    alert("Title and URL are required!");
-    return;
-  }
+html+="</table>";
 
-  await addDoc(collection(db,"videos"),{
-
-    title,
-    url,
-    user: currentUser.username,
-    userId: currentUser.uid,
-    createdAt:new Date(),
-    views:0
-
-  });
-
-  document.getElementById('videoTitle').value="";
-  document.getElementById('videoURL').value="";
-
-  await loadVideos();
-
-  alert("Video uploaded!");
+document.getElementById("videoList").innerHTML=html;
 
 }
-
-
-// PROFILE
-async function loadProfile(){
-
-  showSection('profile');
-
-  const docSnap = await getDoc(doc(db,"users",currentUser.uid));
-
-  if(docSnap.exists()){
-
-    document.getElementById('profileUsername').innerText = docSnap.data().username;
-
-    const created = docSnap.data().createdAt;
-
-    if(created?.toDate){
-      document.getElementById('profileJoinDate').innerText = created.toDate().toDateString();
-    }
-
-    document.getElementById('bio').value = docSnap.data().bio || "";
-
-  }
-
-}
-
-
-// SAVE BIO
-document.getElementById('saveBioBtn').onclick = async ()=>{
-
-  const bio = document.getElementById('bio').value.trim();
-
-  try{
-
-    await updateDoc(doc(db,"users",currentUser.uid),{
-      bio: bio
-    });
-
-    document.getElementById('profileStatus').innerText = "Bio saved!";
-
-  }catch(err){
-
-    document.getElementById('profileStatus').innerText = "Error: "+err.message;
-
-  }
-
-}
-
-
-// USER VIDEOS
-async function loadUserVideos(){
-
-  const q=query(collection(db,"videos"),orderBy("createdAt","desc"));
-  const snapshot = await getDocs(q);
-
-  let html="";
-
-  snapshot.forEach(docSnap=>{
-
-    const data=docSnap.data();
-
-    if(data.user===currentUser.username){
-
-      html+=`
-      <div>
-      ${data.title} -
-      <a href="${data.url}" target="_blank">Watch</a>
-      </div>
-      `;
-
-    }
-
-  });
-
-  document.getElementById('userVideos').innerHTML=html;
-
-}
-
-
-// INITIAL
-showSection("login");
 
 </script>
+
+</body>
+</html>
