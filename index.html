@@ -3,58 +3,41 @@
 <head>
 <title>ClassTube</title>
 <style>
-body{ font-family:Arial; margin:0; }
-
+.avatar {
+    width:30px; height:30px; border-radius:50%;
+    color:white; display:flex; justify-content:center; align-items:center;
+    font-weight:bold; font-family:Arial,sans-serif;
+    text-transform:none;
+}
+.channelLink { cursor:pointer; color:blue; text-decoration:underline; }
 .tabButton {
-  padding:5px 10px; margin-right:5px; cursor:pointer;
-  background:#CCC; border:1px solid #999;
+    padding:5px 10px; margin-right:5px; cursor:pointer;
+    background:#CCC; border:1px solid #999;
 }
 .tabButton.active { background:#999; color:white; }
-
-.videoCard{
-  border-bottom:1px solid #ccc;
-  padding:10px;
-  display:flex;
-  gap:10px;
-}
-
-.videoTitle{
-  color:#065fd4;
-  font-weight:bold;
-  cursor:pointer;
-  text-decoration:none;
-}
-
-.videoTitle:hover{ text-decoration:underline; }
-
-.watchPage{ display:flex; gap:20px; margin-top:20px; }
-
-.mainVideo{ width:70%; }
-
-.sideVideos{ width:30%; }
-
-.sideVideo{ display:flex; gap:8px; margin-bottom:10px; cursor:pointer; }
-
-.sideVideoTitle{ color:#065fd4; font-size:14px; display:flex; align-items:center; }
-
-.avatar{
-  width:30px; height:30px; border-radius:50%;
-  color:white; display:flex; justify-content:center; align-items:center;
-  font-weight:bold; font-family:Arial,sans-serif; text-transform:none;
-  margin-right:5px;
-}
-
-.studentItem{ display:flex; align-items:center; gap:5px; margin-bottom:5px; }
+#uploadSection { display:none; margin-top:10px; }
+.videoFeed { display:flex; flex-wrap:wrap; gap:20px; }
+.videoCard { width:300px; cursor:pointer; }
+.videoCard iframe { width:100%; height:170px; }
+.videoDetails { margin-top:5px; font-size:14px; color:#555; }
+#videoPlayerSection { display:none; padding:20px; }
+#videoPlayerSection iframe { width:640px; height:360px; }
 </style>
 </head>
 
-<body>
+<body bgcolor="#FFF" style="margin:0;font-family:Arial,sans-serif;">
+
+<!-- HEADER -->
+<div id="userProfile" style="position:absolute; top:10px; right:15px; display:flex; align-items:center; gap:8px; font-family:sans-serif;">
+<img id="userAvatar" src="" style="width:34px; height:34px; border-radius:50%; display:none;">
+<span id="usernameDisplay" style="font-weight:500;"></span>
+</div>
 
 <table width="100%" border="1">
 <tr>
 <td>
 <b>ClassTube</b>
-<span id="headerLinks" style="float:right;display:none">
+<span id="headerLinks" style="float:right; display:none;">
 <a href="#" id="homeBtn">Home</a> |
 <a href="#" id="myProfileBtn">My Profile</a> |
 <a href="#" id="logoutBtn">Logout</a>
@@ -64,62 +47,61 @@ body{ font-family:Arial; margin:0; }
 </table>
 
 <!-- LOGIN -->
-<div id="loginSection" style="width:300px;margin:50px auto;background:#DDD;padding:10px;border:1px solid #999">
+<div id="loginSection" style="width:300px; margin:50px auto; background:#DDD; padding:10px; border:1px solid #999;">
 <h2>Login / Sign Up</h2>
+
 <b>Sign Up</b><br><br>
-Username:<br><input id="signupUsername"><br><br>
-Email:<br><input id="signupEmail"><br><br>
+Username:<br><input type="text" id="signupUsername"><br><br>
+Email:<br><input type="email" id="signupEmail"><br><br>
+Birthdate:<br><input type="date" id="signupBirthdate"><br><br>
 Password:<br><input type="password" id="signupPassword"><br><br>
 <input type="button" value="Create Account" id="signupBtn"><br><br>
+
 <b>Login</b><br><br>
-Email:<br><input id="loginEmail"><br><br>
+Email:<br><input type="email" id="loginEmail"><br><br>
 Password:<br><input type="password" id="loginPassword"><br><br>
 <input type="button" value="Login" id="loginBtn"><br><br>
+
 <span id="status"></span>
 </div>
 
 <!-- FEED -->
-<div id="feedSection" style="display:none;padding:20px">
+<div id="feedSection" style="display:none; padding:20px;">
 <h3>Welcome, <span id="userEmail"></span></h3>
 <hr>
-<h3>Students</h3>
+<h3>Students:</h3>
 <div id="userList"></div>
-<hr>
-<div id="videoList"></div>
+
+<h3>All Videos:</h3>
+<div id="videoList" class="videoFeed"></div>
 </div>
 
 <!-- PROFILE -->
-<div id="profileSection" style="display:none;padding:20px">
-<div id="tabs">
-<span id="profileTab" class="tabButton active">Profile</span>
-<span id="uploadTab" class="tabButton">Upload</span>
-</div>
-
-<div id="profileContent">
-<h3>Profile Info</h3>
-Username: <span id="profileUsername"></span><br>
+<div id="profileSection" style="display:none; padding:20px;">
+Username: <b id="profileUsername"></b><br>
+Join date: <span id="profileJoinDate"></span><br><br>
 Bio:<br>
 <textarea id="bio" rows="5" cols="40"></textarea><br>
-<input type="button" value="Save Bio" id="saveBioBtn"><br>
+<input type="button" value="Save Bio" id="saveBioBtn"><br><br>
 <span id="profileStatus"></span>
-<h3>My Videos</h3>
-<div id="userVideos"></div>
 </div>
 
-<div id="uploadSection" style="display:none;margin-top:10px">
-<h3>Upload Video</h3>
-Title:<br><input type="text" id="videoTitle"><br>
-Video URL:<br><input type="text" id="videoURL"><br>
-<input type="button" value="Post Video" id="postVideoBtn"><br>
-</div>
+<!-- VIDEO PLAYER -->
+<div id="videoPlayerSection">
+<h3 id="playerTitle"></h3>
+<div id="playerUploader" style="display:flex; align-items:center; gap:8px;"></div>
+<iframe id="playerIframe" src="" frameborder="0" allowfullscreen></iframe>
+<div id="playerStats" class="videoDetails"></div>
+<h4>Other Videos:</h4>
+<div id="otherVideos" class="videoFeed"></div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, collection, getDocs, addDoc, query, orderBy, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, collection, getDocs, addDoc, query, orderBy, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-// Firebase config
+// --- Firebase Config ---
 const firebaseConfig = {
   apiKey:"AIzaSyC2QdW6Gq3dnFf2JL4-vET-68M6LvTJUvw",
   authDomain:"classtube2-1436a.firebaseapp.com",
@@ -128,169 +110,182 @@ const firebaseConfig = {
   messagingSenderId:"290016676161",
   appId:"1:290016676161:web:1f88361dcb31ad31fd79c0"
 };
-
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+let currentUser = null;
 
-let currentUser=null;
-let videosCache=[];
+// --- Header ---
+document.getElementById("homeBtn").onclick = ()=>{ showSection('feed'); loadVideos(); }
+document.getElementById("myProfileBtn").onclick = ()=>loadProfile();
+document.getElementById("logoutBtn").onclick = async ()=>{ await signOut(auth); };
 
-// Avatar colors
+// --- Sections ---
+function showSection(section){
+  document.getElementById("loginSection").style.display = (section==="login")?"block":"none";
+  document.getElementById("feedSection").style.display = (section==="feed")?"block":"none";
+  document.getElementById("profileSection").style.display = (section==="profile")?"block":"none";
+  document.getElementById("videoPlayerSection").style.display = (section==="player")?"block":"none";
+}
+
+// --- Avatar Colors ---
 const avatarColors = ["#AA47BD","#7B1FA2","#77919D","#455A65","#EC417A","#C1175C","#5D6AC0","#0388D2","#00579B","#0098A7","#00897B","#004D40","#68A039","#34691E","#8C6E63","#5D4138","#7D57C1","#512DA7","#EF6C00","#F6511E","#BE360B"];
-function getAvatarColor(name){ let hash=0; for(let i=0;i<name.length;i++){hash=name.charCodeAt(i)+((hash<<5)-hash);} return avatarColors[Math.abs(hash)%avatarColors.length]; }
+function getAvatarColor(name){
+  let hash=0; for(let i=0;i<name.length;i++){hash=name.charCodeAt(i)+((hash<<5)-hash);}
+  return avatarColors[Math.abs(hash)%avatarColors.length];
+}
 
-// --- Tabs ---
-const profileTab=document.getElementById('profileTab');
-const uploadTab=document.getElementById('uploadTab');
-const profileContent=document.getElementById('profileContent');
-const uploadSection=document.getElementById('uploadSection');
-
-profileTab.onclick=()=>{ profileTab.classList.add('active'); uploadTab.classList.remove('active'); profileContent.style.display='block'; uploadSection.style.display='none'; };
-uploadTab.onclick=()=>{ uploadTab.classList.add('active'); profileTab.classList.remove('active'); profileContent.style.display='none'; uploadSection.style.display='block'; };
-
-// --- LOGIN/SIGNUP ---
-signupBtn.onclick=async()=>{
-  const username=signupUsername.value.trim();
-  const email=signupEmail.value.trim();
-  const password=signupPassword.value;
+// --- Signup/Login ---
+document.getElementById('signupBtn').onclick = async ()=>{
+  const username = document.getElementById('signupUsername').value.trim();
+  const email = document.getElementById('signupEmail').value.trim();
+  const password = document.getElementById('signupPassword').value;
   if(!username){ status.innerText="Username required"; return; }
-  const userCred=await createUserWithEmailAndPassword(auth,email,password);
-  await setDoc(doc(db,"users",userCred.user.uid),{username,email,bio:"",createdAt:new Date()});
-  signupUsername.value=""; signupEmail.value=""; signupPassword.value="";
-  status.innerText="Account created!";
+  try{
+    const userCred = await createUserWithEmailAndPassword(auth,email,password);
+    await setDoc(doc(db,"users",userCred.user.uid),{ username,email,bio:"",createdAt:new Date() });
+    status.innerText="Account created!";
+  }catch(err){ status.innerText=err.message; }
 };
 
-loginBtn.onclick=async()=>{ await signInWithEmailAndPassword(auth,loginEmail.value,loginPassword.value); };
+document.getElementById('loginBtn').onclick = async ()=>{
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  try{ await signInWithEmailAndPassword(auth,email,password); } 
+  catch(err){ status.innerText=err.message; }
+};
 
-// --- AUTH STATE ---
-onAuthStateChanged(auth,async(user)=>{
-  if(!user){ document.getElementById("loginSection").style.display="block"; document.getElementById("feedSection").style.display="none"; document.getElementById("profileSection").style.display="none"; headerLinks.style.display="none"; status.innerText="You must log in."; }
+// --- Auth State ---
+const status = document.getElementById('status');
+const headerLinks = document.getElementById('headerLinks');
+const userEmail = document.getElementById('userEmail');
+
+onAuthStateChanged(auth, async (user)=>{
+  if(!user){ showSection("login"); headerLinks.style.display="none"; status.innerText="You must log in."; }
   else{
-    currentUser=user;
-    document.getElementById("loginSection").style.display="none";
-    document.getElementById("feedSection").style.display="block";
-    document.getElementById("profileSection").style.display="none";
-    headerLinks.style.display="inline";
-    userEmail.innerText=user.email;
-    await loadUsers(); await loadVideos(); await loadUserVideos(); await loadProfile();
+    currentUser=user; showSection("feed"); headerLinks.style.display="inline"; userEmail.innerText=user.email;
+    const userSnap = await getDoc(doc(db,"users",user.uid));
+    if(userSnap.exists()) currentUser.username=userSnap.data().username;
+    await loadUsers(); await loadVideos(); await loadProfile(); await loadUserVideos();
   }
 });
 
-// --- NAVIGATION ---
-homeBtn.onclick=()=>{ showFeed(); };
-myProfileBtn.onclick=()=>{ loadProfile(); };
-logoutBtn.onclick=async()=>{ await signOut(auth); };
-
-// --- Show feed ---
-function showFeed(){
-  document.getElementById("feedSection").style.display="block";
-  document.getElementById("profileSection").style.display="none";
-  userList.style.display="block";
-  loadVideos();
-}
-
-// --- LOAD USERS ---
+// --- Load Users ---
 async function loadUsers(){
-  const snapshot=await getDocs(collection(db,"users"));
-  let html="";
-  snapshot.forEach(docSnap=>{
-    const data=docSnap.data();
-    const color=getAvatarColor(data.username);
-    html+=`<div class="studentItem"><div class="avatar" style="background:${color}">${data.username.charAt(0)}</div>${data.username}</div>`;
+  const snapshot = await getDocs(collection(db,"users"));
+  let html="<table border='1' cellpadding='5'><tr><th>Avatar</th><th>Username</th><th>Bio</th></tr>";
+  snapshot.forEach(doc=>{
+    const data = doc.data();
+    const firstLetter = data.username.charAt(0);
+    const color = getAvatarColor(data.username);
+    html+=`<tr><td><div class='avatar' style='background:${color}'>${firstLetter}</div></td><td>${data.username}</td><td>${data.bio||""}</td></tr>`;
   });
-  userList.innerHTML=html;
+  html+="</table>"; document.getElementById('userList').innerHTML=html;
 }
 
-// --- LOAD VIDEOS ---
+// --- Helper: time ago ---
+function timeAgo(date){
+  const now = new Date();
+  const diff = now - date;
+  const days = Math.floor(diff / (1000*60*60*24));
+  if(days<30) return days + (days===1?" day ago":" days ago");
+  const months = Math.floor(days/30);
+  if(months<12) return months + (months===1?" month ago":" months ago");
+  const years = Math.floor(months/12);
+  return years + (years===1?" year ago":" years ago");
+}
+
+// --- Load Videos ---
 async function loadVideos(){
   const q=query(collection(db,"videos"),orderBy("createdAt","desc"));
-  const snapshot=await getDocs(q);
-  videosCache=[];
+  const snapshot = await getDocs(q);
   let html="";
-  snapshot.forEach(docSnap=>{
-    const data=docSnap.data();
-    const id=docSnap.id;
+  snapshot.forEach(doc=>{
+    const data = doc.data();
     let url=data.url.includes("/view")?data.url.replace("/view","/preview"):data.url;
-    videosCache.push({id,title:data.title,user:data.user,url});
-    const color=getAvatarColor(data.user);
-    html+=`<div class="videoCard">
-      <iframe src="${url}" width="160" height="90"></iframe>
-      <div>
-        <a class="videoTitle" onclick="watchVideo('${id}')">${data.title}</a><br>
-        <div style="display:flex;align-items:center;"><div class="avatar" style="background:${color}">${data.user.charAt(0)}</div>${data.user}</div>
-      </div>
+    html+=`<div class="videoCard" onclick="playVideo('${doc.id}')">
+      <iframe src="${url}" frameborder="0" allowfullscreen></iframe>
+      <div class="videoDetails">${data.title} - <b>${data.user}</b></div>
     </div>`;
   });
-  videoList.innerHTML=html;
+  document.getElementById('videoList').innerHTML=html;
 }
 
-// --- WATCH VIDEO ---
-window.watchVideo=function(id){
-  const video=videosCache.find(v=>v.id===id);
-  let side="";
-  videosCache.forEach(v=>{
-    if(v.id!==id){
-      const color=getAvatarColor(v.user);
-      side+=`<div class="sideVideo" onclick="watchVideo('${v.id}')">
-        <iframe src="${v.url}" width="120" height="70"></iframe>
-        <div class="sideVideoTitle"><div class="avatar" style="background:${color}">${v.user.charAt(0)}</div>${v.title}</div>
-      </div>`;
+// --- Play Video ---
+window.playVideo = async function(videoId){
+  const docSnap = await getDoc(doc(db,"videos",videoId));
+  if(!docSnap.exists()) return;
+  const data = docSnap.data();
+  const url=data.url.includes("/view")?data.url.replace("/view","/preview"):data.url;
+  const createdAtDate = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt.seconds*1000);
+  const timeText = timeAgo(createdAtDate);
+
+  showSection('player');
+  document.getElementById('playerIframe').src=url;
+  document.getElementById('playerTitle').innerText = data.title;
+  
+  // uploader with avatar
+  const color = getAvatarColor(data.user);
+  document.getElementById('playerUploader').innerHTML = `<div class='avatar' style='background:${color}'>${data.user.charAt(0)}</div>${data.user}`;
+
+  // views and "ago"
+  document.getElementById('playerStats').innerText = `${timeText} • ${data.views || 0} views`;
+
+  // other videos
+  const q=query(collection(db,"videos"),orderBy("createdAt","desc"));
+  const snapshot = await getDocs(q);
+  let html="";
+  snapshot.forEach(doc2=>{
+    if(doc2.id!==videoId){
+      const d=doc2.data();
+      const url2=d.url.includes("/view")?d.url.replace("/view","/preview"):d.url;
+      html+=`<div class="videoCard" onclick="playVideo('${doc2.id}')"><iframe src="${url2}" frameborder="0" allowfullscreen></iframe><div class="videoDetails">${d.title} - <b>${d.user}</b></div></div>`;
     }
   });
-  userList.style.display="none"; // Hide students while watching video
-  videoList.innerHTML=`<div class="watchPage">
-    <div class="mainVideo">
-      <h2>${video.title}</h2>
-      <iframe src="${video.url}" width="640" height="360"></iframe>
-      <p><div class="avatar" style="background:${getAvatarColor(video.user)}">${video.user.charAt(0)}</div>${video.user}</p>
-    </div>
-    <div class="sideVideos">${side}</div>
-  </div>`;
-};
+  document.getElementById('otherVideos').innerHTML=html;
+}
 
-// --- PROFILE ---
+// --- Profile ---
 async function loadProfile(){
-  const docSnap=await getDoc(doc(db,"users",currentUser.uid));
+  showSection('profile');
+  const docSnap = await getDoc(doc(db,"users",currentUser.uid));
   if(docSnap.exists()){
-    profileSection.style.display="block";
-    feedSection.style.display="none";
-    profileTab.classList.add('active'); uploadTab.classList.remove('active');
-    profileContent.style.display='block'; uploadSection.style.display='none';
-    profileUsername.innerText=docSnap.data().username;
-    bio.value=docSnap.data().bio||"";
-    await loadUserVideos();
+    document.getElementById('profileUsername').innerText = docSnap.data().username;
+    document.getElementById('profileJoinDate').innerText = docSnap.data().createdAt.toDateString?.() || new Date(docSnap.data().createdAt.seconds*1000).toDateString();
+    document.getElementById('bio').value = docSnap.data().bio || "";
   }
 }
 
-// --- SAVE BIO ---
-saveBioBtn.onclick=async()=>{
-  await setDoc(doc(db,"users",currentUser.uid),{bio:bio.value},{merge:true});
-  profileStatus.innerText="Bio saved!";
-};
-
-// --- LOAD USER VIDEOS ---
-async function loadUserVideos(){
-  const q=query(collection(db,"videos"),orderBy("createdAt","desc"));
-  const snapshot=await getDocs(q);
-  let html="";
-  snapshot.forEach(docSnap=>{
-    const data=docSnap.data();
-    if(data.user===currentUser.username){
-      html+=`<div>${data.title}</div>`;
+// --- Save Bio ---
+document.getElementById('saveBioBtn').onclick = async () => {
+    const bio = document.getElementById('bio').value.trim();
+    try {
+        await updateDoc(doc(db, "users", currentUser.uid), { bio: bio });
+        document.getElementById('profileStatus').innerText = "Bio saved!";
+        await loadProfile();
+    } catch (err) {
+        document.getElementById('profileStatus').innerText = "Error saving bio: " + err.message;
     }
-  });
-  userVideos.innerHTML=html;
 }
 
-// --- UPLOAD VIDEO ---
-postVideoBtn.onclick=async()=>{
-  if(!videoTitle.value.trim() || !videoURL.value.trim()){ alert("Title & URL required"); return; }
-  await addDoc(collection(db,"videos"),{title:videoTitle.value,user:currentUser.username,url:videoURL.value,createdAt:new Date()});
-  videoTitle.value=""; videoURL.value="";
-  await loadVideos(); await loadUserVideos();
-  alert("Video uploaded!");
-};
+// --- User Videos ---
+async function loadUserVideos(){
+  const q=query(collection(db,"videos"),orderBy("createdAt","desc"));
+  const snapshot = await getDocs(q);
+  let html="";
+  snapshot.forEach(doc=>{
+    const data=doc.data();
+    if(data.user===currentUser.username){
+      let url=data.url.includes("/view")?data.url.replace("/view","/preview"):data.url;
+      html+=`<div>${data.title} - <a href="${url}" target="_blank">Watch</a></div>`;
+    }
+  });
+  document.getElementById('userVideos').innerHTML=html;
+}
+
+// --- Initial ---
+showSection("login");
 </script>
+
 </body>
 </html>
