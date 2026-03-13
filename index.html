@@ -16,11 +16,11 @@
 }
 .tabButton.active { background:#999; color:white; }
 #uploadSection { display:none; margin-top:10px; }
-.videoFeed { display:flex; gap:10px; flex-wrap:wrap; }
-.videoCard { border:1px solid #ccc; padding:5px; width:200px; cursor:pointer; }
-.videoCard img { width:100%; }
-.rightSidebar { display:flex; flex-direction:column; gap:10px; margin-left:20px; }
-.lightGray { color: #777; font-size: 0.85em; }
+.videoPlayer { margin-top:10px; }
+.videoTitle { color:blue; cursor:pointer; font-weight:bold; }
+.videoInfo { color:gray; font-size:0.9em; }
+.videoSidebar { margin-top:10px; display:flex; flex-direction:column; gap:10px; }
+#feedSection, #profileSection { padding:20px; }
 </style>
 </head>
 
@@ -71,18 +71,20 @@ Password:<br>
 </div>
 
 <!-- FEED -->
-<div id="feedSection" style="display:none; padding:20px;">
+<div id="feedSection" style="display:none;">
 <h3>Welcome, <span id="userEmail"></span></h3>
 <hr>
+<div id="studentsContainer">
 <h3>Students:</h3>
 <div id="userList"></div>
+</div>
 
 <h3>All Videos:</h3>
-<div class="videoFeed" id="videoList"></div>
+<div id="videoList"></div>
 </div>
 
 <!-- PROFILE -->
-<div id="profileSection" style="display:none; padding:20px;">
+<div id="profileSection" style="display:none;">
 <div id="tabs">
 <span id="profileTab" class="tabButton active">Profile</span>
 <span id="uploadTab" class="tabButton">Upload</span>
@@ -109,14 +111,13 @@ Video URL:<br>
 <div id="userVideos"></div>
 </div>
 
-<!-- VIDEO PLAYER MODAL -->
+<!-- VIDEO PLAYER -->
 <div id="videoPlayerSection" style="display:none; padding:20px;">
-<h3 id="playerTitle"></h3>
-<div style="display:flex;">
-<iframe id="playerIframe" width="560" height="315" src="" frameborder="0" allowfullscreen></iframe>
-<div class="rightSidebar" id="otherVideos"></div>
-</div>
-<div class="lightGray" id="videoStats"></div>
+<div id="videoPlayerContainer"></div>
+<h3 id="clickedVideoTitle"></h3>
+<div id="clickedVideoInfo" class="videoInfo"></div>
+<h4>Other Videos:</h4>
+<div id="otherVideosSidebar" class="videoSidebar"></div>
 </div>
 
 <script type="module">
@@ -144,19 +145,12 @@ const profileTab = document.getElementById('profileTab');
 const uploadTab = document.getElementById('uploadTab');
 const profileContent = document.getElementById('profileContent');
 const uploadSection = document.getElementById('uploadSection');
-
-profileTab.onclick = ()=>{
-  profileTab.classList.add('active'); uploadTab.classList.remove('active');
-  profileContent.style.display='block'; uploadSection.style.display='none';
-};
-uploadTab.onclick = ()=>{
-  uploadTab.classList.add('active'); profileTab.classList.remove('active');
-  profileContent.style.display='none'; uploadSection.style.display='block';
-};
+profileTab.onclick = ()=>{ profileTab.classList.add('active'); uploadTab.classList.remove('active'); profileContent.style.display='block'; uploadSection.style.display='none'; };
+uploadTab.onclick = ()=>{ uploadTab.classList.add('active'); profileTab.classList.remove('active'); profileContent.style.display='none'; uploadSection.style.display='block'; };
 
 // --- Header ---
-document.getElementById("homeBtn").onclick = ()=>{ showSection('feed'); loadVideos(); };
-document.getElementById("myProfileBtn").onclick = ()=>loadProfile();
+document.getElementById("homeBtn").onclick = ()=>{ showSection('feed'); document.getElementById('videoPlayerSection').style.display='none'; document.getElementById('studentsContainer').style.display='block'; };
+document.getElementById("myProfileBtn").onclick = ()=>{ showSection('profile'); document.getElementById('videoPlayerSection').style.display='none'; };
 document.getElementById("logoutBtn").onclick = async ()=>{ await signOut(auth); };
 
 // --- Show Sections ---
@@ -164,15 +158,11 @@ function showSection(section){
   document.getElementById("loginSection").style.display = (section==="login")?"block":"none";
   document.getElementById("feedSection").style.display = (section==="feed")?"block":"none";
   document.getElementById("profileSection").style.display = (section==="profile")?"block":"none";
-  document.getElementById("videoPlayerSection").style.display = (section==="player")?"block":"none";
 }
 
 // --- Avatar Colors ---
 const avatarColors = ["#AA47BD","#7B1FA2","#77919D","#455A65","#EC417A","#C1175C","#5D6AC0","#0388D2","#00579B","#0098A7","#00897B","#004D40","#68A039","#34691E","#8C6E63","#5D4138","#7D57C1","#512DA7","#EF6C00","#F6511E","#BE360B"];
-function getAvatarColor(name){
-  let hash=0; for(let i=0;i<name.length;i++){hash=name.charCodeAt(i)+((hash<<5)-hash);}
-  return avatarColors[Math.abs(hash)%avatarColors.length];
-}
+function getAvatarColor(name){let hash=0;for(let i=0;i<name.length;i++){hash=name.charCodeAt(i)+((hash<<5)-hash);}return avatarColors[Math.abs(hash)%avatarColors.length];}
 
 // --- Signup ---
 document.getElementById('signupBtn').onclick = async ()=>{
@@ -183,9 +173,7 @@ document.getElementById('signupBtn').onclick = async ()=>{
   try{
     const userCred = await createUserWithEmailAndPassword(auth,email,password);
     await setDoc(doc(db,"users",userCred.user.uid),{ username,email,bio:"",createdAt:new Date() });
-    document.getElementById('signupUsername').value="";
-    document.getElementById('signupEmail').value="";
-    document.getElementById('signupPassword').value="";
+    document.getElementById('signupUsername').value=""; document.getElementById('signupEmail').value=""; document.getElementById('signupPassword').value="";
     status.innerText="Account created!";
   }catch(err){ status.innerText=err.message; }
 };
@@ -194,8 +182,7 @@ document.getElementById('signupBtn').onclick = async ()=>{
 document.getElementById('loginBtn').onclick = async ()=>{
   const email = document.getElementById('loginEmail').value.trim();
   const password = document.getElementById('loginPassword').value;
-  try{ await signInWithEmailAndPassword(auth,email,password); } 
-  catch(err){ status.innerText=err.message; }
+  try{ await signInWithEmailAndPassword(auth,email,password); } catch(err){ status.innerText=err.message; }
 };
 
 // --- Auth State ---
@@ -226,37 +213,58 @@ async function loadUsers(){
   html+="</table>"; document.getElementById('userList').innerHTML=html;
 }
 
-// --- Load Videos (feed horizontal) ---
+// --- Convert Google Drive view to preview ---
+function drivePreview(url){
+  const match = url.match(/\/d\/([a-zA-Z0-9_-]+)\//);
+  return match ? `https://drive.google.com/uc?export=preview&id=${match[1]}` : url;
+}
+
+// --- Load Videos ---
 async function loadVideos(){
   const q=query(collection(db,"videos"),orderBy("createdAt","desc"));
   const snapshot = await getDocs(q);
-  let html="";
+  const container = document.getElementById('videoList'); container.innerHTML="";
   snapshot.forEach(doc=>{
     const data = doc.data();
-    const firstLetter = data.user.charAt(0);
+    const videoUrl = drivePreview(data.url);
     const color = getAvatarColor(data.user);
-    html+=`<div class="videoCard" onclick="playVideo('${doc.id}')">
-      <div class="avatar" style="display:inline-block; width:25px; height:25px; background:${color}; margin-right:5px; vertical-align:middle;">${firstLetter}</div>
-      <span>${data.user}</span><br>
-      <img src="https://drive.google.com/uc?export=preview&id=${data.url.split('/d/')[1].split('/')[0]}" alt="${data.title}">
-      <div style="color:blue;">${data.title}</div>
-    </div>`;
+    const div = document.createElement('div');
+    div.innerHTML = `<div class='videoItem'>
+      <span class='videoTitle' onclick="playVideo('${doc.id}')">${data.title}</span> - <span style='display:inline-flex;align-items:center;gap:5px;'><div class='avatar' style='background:${color}'>${data.user.charAt(0)}</div>${data.user}</span>
+      </div>`;
+    container.appendChild(div);
   });
-  document.getElementById('videoList').innerHTML=html;
 }
 
 // --- Play Video ---
 window.playVideo = async function(videoId){
+  document.getElementById('feedSection').style.display='none';
+  document.getElementById('profileSection').style.display='none';
+  document.getElementById('videoPlayerSection').style.display='block';
   const docSnap = await getDoc(doc(db,"videos",videoId));
   if(!docSnap.exists()) return;
   const data = docSnap.data();
-  document.getElementById('videoPlayerSection').style.display='block';
-  document.getElementById('feedSection').style.display='none';
-  document.getElementById('playerTitle').innerText = data.title;
-  document.getElementById('playerIframe').src = "https://drive.google.com/uc?export=preview&id="+data.url.split('/d/')[1].split('/')[0];
-  const createdAt = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt.seconds*1000);
-  const diff = Math.floor((new Date()-createdAt)/(1000*60*60*24));
-  document.getElementById('videoStats').innerText = `${diff} days ago · ${data.views||0} views`;
+  const videoUrl = drivePreview(data.url);
+  document.getElementById('videoPlayerContainer').innerHTML=`<iframe width="640" height="360" src="${videoUrl}" allowfullscreen></iframe>`;
+  document.getElementById('clickedVideoTitle').innerText = data.title;
+  const created = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt.seconds*1000);
+  const now = new Date(); let diff = Math.floor((now-created)/1000); let ago="";
+  if(diff>=2592000){ ago=Math.floor(diff/2592000)+" months ago"; } else if(diff>=86400){ ago=Math.floor(diff/86400)+" days ago"; } else if(diff>=3600){ ago=Math.floor(diff/3600)+" hours ago"; } else { ago=Math.floor(diff/60)+" minutes ago"; }
+  document.getElementById('clickedVideoInfo').innerText = `${ago} | ${data.views || 0} views`;
+
+  // Other videos
+  const q = query(collection(db,"videos"),orderBy("createdAt","desc"));
+  const snapshot = await getDocs(q);
+  const container = document.getElementById('otherVideosSidebar'); container.innerHTML="";
+  snapshot.forEach(doc2=>{
+    const d = doc2.data();
+    if(d.title!==data.title){
+      const color2 = getAvatarColor(d.user);
+      const div = document.createElement('div');
+      div.innerHTML = `<span class='videoTitle' onclick="playVideo('${doc2.id}')">${d.title}</span> - <span style='display:inline-flex;align-items:center;gap:5px;'><div class='avatar' style='background:${color2}'>${d.user.charAt(0)}</div>${d.user}</span>`;
+      container.appendChild(div);
+    }
+  });
 }
 
 // --- Upload Video ---
@@ -266,47 +274,49 @@ document.getElementById('postVideoBtn').onclick = async ()=>{
   if(!title || !url){ alert("Title and URL are required!"); return; }
   await addDoc(collection(db,"videos"),{ title,url,user: currentUser.username, userId: currentUser.uid, createdAt:new Date(), views:0 });
   document.getElementById('videoTitle').value=""; document.getElementById('videoURL').value="";
-  await loadVideos(); alert("Video uploaded!");
+  await loadVideos(); await loadUserVideos();
+  alert("Video uploaded!");
 }
 
-// --- Save Bio ---
-document.getElementById('saveBioBtn').onclick = async () => {
-  const bio = document.getElementById('bio').value.trim();
-  try {
-      await updateDoc(doc(db, "users", currentUser.uid), { bio: bio });
-      document.getElementById('profileStatus').innerText = "Bio saved!";
-  } catch (err) {
-      document.getElementById('profileStatus').innerText = "Error saving bio: " + err.message;
-  }
-}
-
-// --- Load Profile ---
+// --- Profile ---
 async function loadProfile(){
   showSection('profile');
   const docSnap = await getDoc(doc(db,"users",currentUser.uid));
   if(docSnap.exists()){
-      document.getElementById('profileUsername').innerText = docSnap.data().username;
-      const createdAt = docSnap.data().createdAt.toDate ? docSnap.data().createdAt.toDate() : new Date(docSnap.data().createdAt.seconds*1000);
-      document.getElementById('profileJoinDate').innerText = createdAt.toDateString();
-      document.getElementById('bio').value = docSnap.data().bio || "";
+    document.getElementById('profileUsername').innerText = docSnap.data().username;
+    document.getElementById('profileJoinDate').innerText = docSnap.data().createdAt.toDateString?.() || new Date(docSnap.data().createdAt.seconds*1000).toDateString();
+    document.getElementById('bio').value = docSnap.data().bio || "";
   }
 }
 
-// --- Load User Videos ---
+// --- Save Bio ---
+document.getElementById('saveBioBtn').onclick = async () => {
+    const bio = document.getElementById('bio').value.trim();
+    try {
+        await updateDoc(doc(db, "users", currentUser.uid), { bio: bio });
+        document.getElementById('profileStatus').innerText = "Bio saved!";
+        await loadProfile();
+    } catch (err) {
+        document.getElementById('profileStatus').innerText = "Error saving bio: " + err.message;
+    }
+}
+
+// --- User Videos ---
 async function loadUserVideos(){
   const q=query(collection(db,"videos"),orderBy("createdAt","desc"));
   const snapshot = await getDocs(q);
   let html="";
   snapshot.forEach(doc=>{
-      const data=doc.data();
-      if(data.user===currentUser.username){
-          html+=`<div>${data.title} - <a href="#" onclick="playVideo('${doc.id}')">Watch</a></div>`;
-      }
+    const data=doc.data();
+    if(data.user===currentUser.username){
+      const videoUrl = drivePreview(data.url);
+      html+=`<div>${data.title} - <a href="${videoUrl}" target="_blank">Watch</a></div>`;
+    }
   });
   document.getElementById('userVideos').innerHTML=html;
 }
 
-// --- Initial ---
+// --- INITIAL ---
 showSection("login");
 </script>
 
