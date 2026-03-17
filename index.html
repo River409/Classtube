@@ -22,6 +22,7 @@ body { margin:0; font-family:Arial,sans-serif; background:#fff; }
 #homeThumbnails iframe { width:160px; height:90px; }
 .channelHeader { font-weight:bold; margin-bottom:5px; }
 .channelBio { font-style:italic; margin-bottom:15px; }
+#searchBar { margin-bottom:10px; width:300px; padding:5px; font-size:14px; }
 </style>
 </head>
 <body>
@@ -68,6 +69,9 @@ Password:<br><input type="password" id="loginPassword"><br><br>
 <div id="feedSection" style="display:none; padding:20px;">
 <h3>Welcome, <span id="userEmail"></span></h3>
 <hr>
+
+<h3>Search Videos:</h3>
+<input type="text" id="searchBar" placeholder="Search by title...">
 
 <h3>Students:</h3>
 <div id="userList"></div>
@@ -203,12 +207,15 @@ async function loadUsers(){
 }
 
 // Load videos
+let allVideos = []; // store all videos for search
 async function loadVideos(){
   const q=query(collection(db,"videos"),orderBy("createdAt","desc"));
   const snapshot = await getDocs(q);
+  allVideos = [];
   let html="";
   snapshot.forEach(doc=>{
     const data = doc.data();
+    allVideos.push({id: doc.id, title: data.title, url: data.url});
     html+=`<div onclick="playVideo('${doc.id}')">
       <iframe src="${data.url.replace("/view","/preview")}" frameborder="0" width="160" height="90"></iframe>
       <div class="videoTitle">${data.title}</div>
@@ -216,6 +223,21 @@ async function loadVideos(){
   });
   document.getElementById('homeThumbnails').innerHTML=html;
 }
+
+// Search functionality
+document.getElementById('searchBar').addEventListener('input', function(){
+  const query = this.value.toLowerCase();
+  let html="";
+  allVideos.forEach(v=>{
+    if(v.title.toLowerCase().includes(query)){
+      html+=`<div onclick="playVideo('${v.id}')">
+        <iframe src="${v.url.replace("/view","/preview")}" frameborder="0" width="160" height="90"></iframe>
+        <div class="videoTitle">${v.title}</div>
+      </div>`;
+    }
+  });
+  document.getElementById('homeThumbnails').innerHTML=html;
+});
 
 // Show a user’s channel with bio
 window.showUserChannel = async function(username){
