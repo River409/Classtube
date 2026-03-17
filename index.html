@@ -130,29 +130,31 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+
 let currentUser = null;
 let allUsers = [];
 let allVideos = [];
 
 const avatarColors = ["#AA47BD","#7B1FA2","#77919D","#455A65","#EC417A","#C1175C","#5D6AC0","#0388D2","#00579B","#0098A7","#00897B","#004D40","#68A039","#34691E","#8C6E63","#5D4138","#7D57C1","#512DA7","#EF6C00","#F6511E","#BE360B"];
-
 function getAvatarColor(name){ 
-    let hash=0; 
-    for(let i=0;i<name.length;i++){hash=name.charCodeAt(i)+((hash<<5)-hash);} 
-    return avatarColors[Math.abs(hash)%avatarColors.length]; 
+  let hash=0; 
+  for(let i=0;i<name.length;i++){hash=name.charCodeAt(i)+((hash<<5)-hash);} 
+  return avatarColors[Math.abs(hash)%avatarColors.length]; 
 }
 
-// STATUS & HEADER
+// ELEMENTS
 const status = document.getElementById('status');
 const headerLinks = document.getElementById('headerLinks');
 const userEmail = document.getElementById('userEmail');
+const searchBar = document.getElementById('searchBar');
+const userSearchResults = document.getElementById('userSearchResults');
 
-// SHOW/HIDE SECTIONS
+// SHOW/HIDE SECTION
 function showSection(section){
-  document.getElementById("loginSection").style.display = (section==="login")?"block":"none";
-  document.getElementById("feedSection").style.display = (section==="feed")?"block":"none";
-  document.getElementById("profileSection").style.display = (section==="profile")?"block":"none";
-  document.getElementById("videoPlayerSection").style.display = (section==="player")?"block":"none";
+  document.getElementById("loginSection").style.display = section==="login"?"block":"none";
+  document.getElementById("feedSection").style.display = section==="feed"?"block":"none";
+  document.getElementById("profileSection").style.display = section==="profile"?"block":"none";
+  document.getElementById("videoPlayerSection").style.display = section==="player"?"block":"none";
 }
 
 // SIGNUP
@@ -182,6 +184,10 @@ document.getElementById('loginBtn').onclick = async ()=>{
 // LOGOUT
 document.getElementById("logoutBtn").onclick = async ()=>await signOut(auth);
 
+// HOME / PROFILE BUTTONS
+document.getElementById("homeBtn").onclick = async ()=>{ await loadUsers(); await loadVideos(); showSection('feed'); };
+document.getElementById("myProfileBtn").onclick = async ()=>{ await loadProfile(); };
+
 // AUTH STATE
 onAuthStateChanged(auth, async user=>{
   if(!user){ showSection("login"); headerLinks.style.display="none"; status.innerText="You must log in."; }
@@ -199,6 +205,7 @@ onAuthStateChanged(auth, async user=>{
   }
 });
 
+// ---------------------------
 // LOAD USERS
 async function loadUsers(){
   const snapshot = await getDocs(collection(db,"users"));
@@ -216,8 +223,10 @@ async function loadUsers(){
   });
   html+="</table>";
   document.getElementById('userList').innerHTML=html;
+  if(searchBar.value==="") userSearchResults.style.display="none";
 }
 
+// ---------------------------
 // LOAD VIDEOS
 async function loadVideos(){
   const q=query(collection(db,"videos"),orderBy("createdAt","desc"));
@@ -235,9 +244,41 @@ async function loadVideos(){
   document.getElementById('homeThumbnails').innerHTML=html;
 }
 
-// --- rest of code: search, playVideo, showUserChannel, upload, profile, saveBio, etc. ---
-// All original functions remain intact, just ensure every avatar uses: innerText = first letter
-</script>
+// ---------------------------
+// SEARCH
+searchBar.addEventListener('input', ()=>{
+  const queryStr = searchBar.value.toLowerCase();
+  let userHtml="";
+  allUsers.forEach(u=>{
+    if(u.username.toLowerCase().includes(queryStr)){
+      const color=getAvatarColor(u.username);
+      userHtml+=`<div onclick="showUserChannel('${u.username}')">
+        <div class='avatar' style='background:${color}'>${u.username.charAt(0).toUpperCase()}</div>
+        <span>${u.username}</span>
+      </div>`;
+    }
+  });
+  userSearchResults.innerHTML=userHtml;
+  userSearchResults.style.display=queryStr? "block":"none";
 
+  let videoHtml="";
+  allVideos.forEach(v=>{
+    if(v.title.toLowerCase().includes(queryStr)){
+      videoHtml+=`<div onclick="playVideo('${v.id}')">
+        <iframe src="${v.url.replace("/view","/preview")}" frameborder="0" width="160" height="90"></iframe>
+        <div class="videoTitle">${v.title}</div>
+      </div>`;
+    }
+  });
+  document.getElementById('homeThumbnails').innerHTML=videoHtml;
+  document.getElementById('userList').style.display=queryStr? "none":"block";
+});
+
+// ---------------------------
+// The rest of functions: showUserChannel, playVideo, loadProfile, loadUserVideos, post video, save bio
+// Keep them exactly as in your original working code, just integrate avatar letters where needed
+
+showSection("login");
+</script>
 </body>
 </html>
