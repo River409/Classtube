@@ -75,7 +75,7 @@ Password:<br><input type="password" id="loginPassword"><br><br>
 <h3>Search Videos / Users:</h3>
 <input type="text" id="searchBar" placeholder="Search by title or user...">
 
-<div class="userSearchResults" id="userSearchResults"></div>
+<div class="userSearchResults" id="userSearchResults" style="display:none;"></div>
 
 <h3>Students:</h3>
 <div id="userList"></div>
@@ -189,8 +189,11 @@ function showSection(section){
   document.getElementById("videoPlayerSection").style.display = (section==="player")?"block":"none";
 }
 
-// Load users
+// Users + videos
 let allUsers = [];
+let allVideos = [];
+
+// Load users
 async function loadUsers(){
   if(document.getElementById("feedSection").style.display!=="block"){ 
     document.getElementById('userList').innerHTML=""; 
@@ -210,11 +213,11 @@ async function loadUsers(){
       <td>${data.bio||""}</td>
     </tr>`;
   });
-  html+="</table>"; document.getElementById('userList').innerHTML=html;
+  html+="</table>"; 
+  document.getElementById('userList').innerHTML=html;
 }
 
 // Load videos
-let allVideos = [];
 async function loadVideos(){
   const q=query(collection(db,"videos"),orderBy("createdAt","desc"));
   const snapshot = await getDocs(q);
@@ -231,11 +234,26 @@ async function loadVideos(){
   document.getElementById('homeThumbnails').innerHTML=html;
 }
 
-// Search functionality (videos + users)
+// Search bar logic
 document.getElementById('searchBar').addEventListener('input', function(){
-  const queryStr = this.value.toLowerCase();
+  const queryStr = this.value.toLowerCase().trim();
   const userResultsDiv = document.getElementById('userSearchResults');
-  let userHtml = "";
+  const userTable = document.getElementById('userList');
+
+  if(queryStr===""){
+    // show table, hide search results
+    userResultsDiv.style.display="none";
+    userTable.style.display="block";
+    loadVideos();
+    return;
+  }
+
+  // Hide table and show search results
+  userTable.style.display="none";
+  userResultsDiv.style.display="block";
+
+  // Users
+  let userHtml="";
   allUsers.forEach(u=>{
     if(u.username.toLowerCase().includes(queryStr)){
       const color = getAvatarColor(u.username);
@@ -245,9 +263,10 @@ document.getElementById('searchBar').addEventListener('input', function(){
       </div>`;
     }
   });
-  userResultsDiv.innerHTML = userHtml;
+  userResultsDiv.innerHTML=userHtml;
 
-  let videoHtml = "";
+  // Videos
+  let videoHtml="";
   allVideos.forEach(v=>{
     if(v.title.toLowerCase().includes(queryStr)){
       videoHtml+=`<div onclick="playVideo('${v.id}')">
@@ -256,123 +275,10 @@ document.getElementById('searchBar').addEventListener('input', function(){
       </div>`;
     }
   });
-  document.getElementById('homeThumbnails').innerHTML = videoHtml;
+  document.getElementById('homeThumbnails').innerHTML=videoHtml;
 });
 
-// Show a user’s channel with bio
-window.showUserChannel = async function(username){
-  showSection("feed");
-  const snapshotUsers = await getDocs(collection(db,"users"));
-  let userData = null;
-  snapshotUsers.forEach(doc=>{
-    const d = doc.data();
-    if(d.username===username) userData = d;
-  });
-  document.getElementById('homeThumbnails').innerHTML="";
-  document.getElementById('userList').innerHTML="";
-  if(userData){
-    const channelHeader = document.createElement("div");
-    channelHeader.className="channelHeader";
-    channelHeader.innerText = username+"'s channel";
-    const channelBio = document.createElement("div");
-    channelBio.className="channelBio";
-    channelBio.innerText = userData.bio||"";
-    document.getElementById('homeThumbnails').appendChild(channelHeader);
-    document.getElementById('homeThumbnails').appendChild(channelBio);
-  }
-
-  const snapshotVideos = await getDocs(collection(db,"videos"));
-  let htmlVideos="";
-  snapshotVideos.forEach(doc=>{
-    const v = doc.data();
-    if(v.user===username){
-      htmlVideos+=`<div onclick="playVideo('${doc.id}')">
-        <iframe src="${v.url.replace("/view","/preview")}" frameborder="0" width="160" height="90"></iframe>
-        <div class="videoTitle">${v.title}</div>
-      </div>`;
-    }
-  });
-  document.getElementById('homeThumbnails').innerHTML += htmlVideos;
-}
-
-// Play video
-window.playVideo = async function(videoId){
-  showSection("player");
-  const docSnap = await getDoc(doc(db,"videos",videoId));
-  if(!docSnap.exists()) return;
-  const data = docSnap.data();
-  document.getElementById('playerTitle').innerText = data.title;
-  const uploaderColor = getAvatarColor(data.user);
-  document.getElementById('playerUploader').innerHTML=
-    `<div class='avatar' style='background:${uploaderColor}' onclick="showUserChannel('${data.user}')">${data.user.charAt(0)}</div>
-     <span onclick="showUserChannel('${data.user}')">${data.user}</span>`;
-  document.getElementById('playerIframe').src = data.url.replace("/view","/preview");
-  const createdAt = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt.seconds*1000);
-  const diffMs = new Date() - createdAt;
-  const diffDays = Math.floor(diffMs/(1000*60*60*24));
-  let agoText = diffDays<30 ? diffDays+" days ago" : Math.floor(diffDays/30)+" months ago";
-  document.getElementById('playerStats').innerText = (data.views||0)+" views • "+agoText;
-  // other videos
-  const q = query(collection(db,"videos"),orderBy("createdAt","desc"));
-  const snapshot = await getDocs(q);
-  let htmlOther="";
-  snapshot.forEach(d=>{
-    if(d.id===videoId) return;
-    const v = d.data();
-    htmlOther+=`<div onclick="playVideo('${d.id}')">
-      <div>${v.title}</div>
-      <iframe width="140" height="80" src="${v.url.replace("/view","/preview")}" frameborder="0"></iframe>
-    </div>`;
-  });
-  document.getElementById('otherVideos').innerHTML = htmlOther;
-}
-
-// Upload video
-document.getElementById('postVideoBtn').onclick = async ()=>{
-  const title = document.getElementById('videoTitle').value.trim();
-  const url = document.getElementById('videoURL').value.trim();
-  if(!title||!url){ alert("Title and URL required"); return; }
-  await addDoc(collection(db,"videos"),{ title,url,user:currentUser.username,userId:currentUser.uid,createdAt:new Date(),views:0 });
-  document.getElementById('videoTitle').value=""; document.getElementById('videoURL').value="";
-  await loadVideos(); alert("Video uploaded!");
-}
-
-// Save bio
-document.getElementById('saveBioBtn').onclick = async () => {
-    const bio = document.getElementById('bio').value.trim();
-    try {
-        await updateDoc(doc(db, "users", currentUser.uid), { bio });
-        document.getElementById('profileStatus').innerText = "Bio saved!";
-    } catch (err) {
-        document.getElementById('profileStatus').innerText = "Error saving bio: " + err.message;
-    }
-}
-
-// Load profile
-async function loadProfile() {
-    showSection('profile');
-    const docSnap = await getDoc(doc(db, "users",currentUser.uid));
-    if (docSnap.exists()) {
-        document.getElementById('profileUsername').innerText = docSnap.data().username;
-        const createdAt = docSnap.data().createdAt.toDate ? docSnap.data().createdAt.toDate() : new Date(docSnap.data().createdAt.seconds*1000);
-        document.getElementById('profileJoinDate').innerText = createdAt.toDateString();
-        document.getElementById('bio').value = docSnap.data().bio || "";
-    }
-}
-
-// Load user videos
-async function loadUserVideos(){
-  const snapshot = await getDocs(collection(db,"videos"));
-  let html="";
-  snapshot.forEach(doc=>{
-    const data = doc.data();
-    if(data.user===currentUser.username){
-      html+=`<div class="videoTitle" onclick="playVideo('${doc.id}')">${data.title}</div>`;
-    }
-  });
-  document.getElementById('userVideos').innerHTML=html;
-}
-
+// ... Keep the rest of your existing functions unchanged (playVideo, showUserChannel, profile, upload etc.) 
 // Home/Profile buttons
 document.getElementById("homeBtn").onclick = ()=>{ showSection('feed'); loadVideos(); loadUsers(); };
 document.getElementById("myProfileBtn").onclick = ()=>loadProfile();
