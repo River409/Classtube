@@ -20,7 +20,12 @@ body { margin:0; font-family:Arial,sans-serif; background:#fff; }
 #homeThumbnails { display:flex; flex-wrap:wrap; gap:10px; }
 #homeThumbnails div { cursor:pointer; width:160px; }
 #commentsList { max-height:200px; overflow-y:auto; margin-bottom:5px; border:1px solid #ccc; padding:5px; }
-#commentInput { width:80%; }
+#commentInput { width:80%; margin-bottom:5px; }
+#profileSection { display:none; padding:20px; border:1px solid #ccc; margin-top:20px; }
+.input-group { margin-bottom:10px; display:flex; flex-direction:column; }
+#loginSection, #signupSection { width:300px; margin:20px auto; background:#DDD; padding:10px; }
+#signupSection { margin-top:30px; }
+button { margin-top:5px; }
 </style>
 </head>
 <body>
@@ -44,22 +49,42 @@ body { margin:0; font-family:Arial,sans-serif; background:#fff; }
 </table>
 
 <!-- LOGIN -->
-<div id="loginSection" style="width:300px; margin:50px auto; background:#DDD; padding:10px;">
-<h2>Login / Sign Up</h2>
-
-<b>Sign Up</b><br>
-<input id="signupUsername" placeholder="Username"><br>
-<input id="signupEmail" placeholder="Email"><br>
-<input id="signupPassword" type="password" placeholder="Password"><br>
-<button id="signupBtn">Create</button><br><br>
-
-<b>Login</b><br>
-<input id="loginEmail" placeholder="Email"><br>
-<input id="loginPassword" type="password" placeholder="Password"><br>
+<div id="loginSection">
+<h2>Login</h2>
+<div class="input-group">
+<label>Email:</label>
+<input id="loginEmail" placeholder="Email">
+</div>
+<div class="input-group">
+<label>Password:</label>
+<input id="loginPassword" type="password" placeholder="Password">
+</div>
 <button id="loginBtn">Login</button>
+</div>
+
+<!-- SIGNUP -->
+<div id="signupSection">
+<h2>Sign Up</h2>
+<div class="input-group">
+<label>Username:</label>
+<input id="signupUsername" placeholder="Username">
+</div>
+<div class="input-group">
+<label>Email:</label>
+<input id="signupEmail" placeholder="Email">
+</div>
+<div class="input-group">
+<label>Password:</label>
+<input id="signupPassword" type="password" placeholder="Password">
+</div>
+<div class="input-group">
+<label>Birthdate:</label>
+<input id="signupBirthdate" type="date">
+</div>
+<button id="signupBtn">Create Account</button>
+</div>
 
 <div id="status"></div>
-</div>
 
 <!-- FEED -->
 <div id="feedSection" style="display:none; padding:20px;">
@@ -74,11 +99,24 @@ body { margin:0; font-family:Arial,sans-serif; background:#fff; }
 </div>
 
 <div id="peopleSection" style="display:none;">
+<h3>People</h3>
 <div id="userList"></div>
 </div>
 </div>
 
-<!-- PLAYER -->
+<!-- PROFILE -->
+<div id="profileSection">
+<h3>My Profile</h3>
+<p id="profileInfo"></p>
+<!-- example bio input -->
+<div class="input-group">
+<label>Bio:</label>
+<textarea id="bioInput" rows="3"></textarea>
+<button id="saveBioBtn">Save Bio</button>
+</div>
+</div>
+
+<!-- VIDEO PLAYER -->
 <div id="videoPlayerSection" style="display:none; padding:20px;">
 <div id="videoPlayerWrapper">
 <div id="videoPlayerMain">
@@ -120,7 +158,10 @@ const SIDE_LIMIT = 6;
 // AUTH
 signupBtn.onclick = async ()=>{
   const user = await createUserWithEmailAndPassword(auth, signupEmail.value, signupPassword.value);
-  await setDoc(doc(db,"users",user.user.uid),{username:signupUsername.value});
+  await setDoc(doc(db,"users",user.user.uid),{
+    username:signupUsername.value,
+    birthdate:signupBirthdate.value
+  });
 };
 
 loginBtn.onclick = ()=>signInWithEmailAndPassword(auth, loginEmail.value, loginPassword.value);
@@ -130,18 +171,23 @@ logoutBtn.onclick = ()=>signOut(auth);
 onAuthStateChanged(auth, async user=>{
   if(!user){
     loginSection.style.display="block";
+    signupSection.style.display="block";
     feedSection.style.display="none";
+    profileSection.style.display="none";
     return;
   }
 
   currentUser = user;
   loginSection.style.display="none";
+  signupSection.style.display="none";
   feedSection.style.display="block";
+  profileSection.style.display="block"; // auto open profile
   headerLinks.style.display="inline";
   userEmail.innerText = user.email;
 
   loadVideos();
-  loadUserList(); // original feature
+  loadUserList();
+  loadProfile(); // load profile info automatically
 });
 
 // LOAD VIDEOS
@@ -151,27 +197,23 @@ async function loadVideos(){
 
   let html="";
   let count = 0;
-
   snap.forEach(docSnap=>{
     if(count >= HOME_LIMIT) return;
-
     const v = docSnap.data();
     html += `
       <div onclick="playVideo('${docSnap.id}')">
         <iframe src="${v.url}" width="160" height="90"></iframe>
-        <div>${v.title}</div>
+        <div class="videoTitle">${v.title}</div>
         <div class="videoMeta">${v.views || 0} views</div>
       </div>`;
     count++;
   });
-
   homeThumbnails.innerHTML = html;
 }
 
 // PLAY VIDEO
 window.playVideo = async (id)=>{
   currentVideoId = id;
-
   videoPlayerSection.style.display="block";
   feedSection.style.display="none";
 
@@ -192,16 +234,13 @@ window.playVideo = async (id)=>{
   const all = await getDocs(collection(db,"videos"));
   let html="";
   let count = 0;
-
   all.forEach(d=>{
     if(d.id===id) return;
     if(count >= SIDE_LIMIT) return;
-
     const vid = d.data();
     html += `<div onclick="playVideo('${d.id}')">${vid.title}</div>`;
     count++;
   });
-
   otherVideos.innerHTML = html;
 };
 
@@ -209,33 +248,29 @@ window.playVideo = async (id)=>{
 async function loadComments(){
   const snap = await getDocs(collection(db,"comments"));
   let html="";
-
   snap.forEach(d=>{
     const c = d.data();
     if(c.videoId === currentVideoId){
       html += `<div><b>${c.user}</b>: ${c.text}</div>`;
     }
   });
-
   commentsList.innerHTML = html;
 }
 
 // POST COMMENT
 commentBtn.onclick = async ()=>{
   if(!commentInput.value) return;
-
   await addDoc(collection(db,"comments"),{
     videoId: currentVideoId,
     text: commentInput.value,
     user: currentUser.email,
     createdAt: Date.now()
   });
-
   commentInput.value="";
   loadComments();
 };
 
-// NAV
+// NAVIGATION
 homeBtn.onclick = ()=>{
   videoPlayerSection.style.display="none";
   feedSection.style.display="block";
@@ -252,13 +287,41 @@ peopleTab.onclick = ()=>{
   peopleSection.style.display="block";
 };
 
-// ORIGINAL sidebar/user features
-function loadUserList(){
-  // keep your existing user list code for the "People" tab
+// USERS / PEOPLE TAB
+async function loadUserList() {
+  const usersSnap = await getDocs(collection(db, "users"));
+  let html = "";
+  usersSnap.forEach(doc => {
+    const u = doc.data();
+    html += `<div>${u.username || u.email}</div>`;
+  });
+  userList.innerHTML = html;
 }
 
+// PROFILE
+function loadProfile() {
+  const docRef = doc(db, "users", currentUser.uid);
+  getDoc(docRef).then(docSnap=>{
+    if(docSnap.exists()){
+      const data = docSnap.data();
+      profileInfo.innerText = `Username: ${data.username}\nEmail: ${currentUser.email}\nBirthdate: ${data.birthdate || 'N/A'}`;
+      bioInput.value = data.bio || "";
+    }
+  });
+}
+
+saveBioBtn.onclick = async ()=>{
+  const docRef = doc(db,"users",currentUser.uid);
+  await updateDoc(docRef,{bio: bioInput.value});
+  alert("Bio saved!");
+}
+
+// MY PROFILE BUTTON
 myProfileBtn.onclick = ()=>{
-  // keep your original profile logic
+  feedSection.style.display="none";
+  videoPlayerSection.style.display="none";
+  profileSection.style.display="block";
+  loadProfile();
 };
 </script>
 
