@@ -248,8 +248,9 @@ onAuthStateChanged(auth, async (user)=>{
     const userSnap = await getDoc(doc(db,"users",user.uid));
     if(userSnap.exists()) currentUser.username=userSnap.data().username;
 
-    // Load profile immediately on login
-    loadProfile(); 
+    // **Show profile immediately for logged-in users**
+    showSection("profile"); 
+    await loadProfile(); 
     await loadUsers(); 
     await loadVideos();
   }
