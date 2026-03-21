@@ -130,18 +130,6 @@ Video URL:<br><input type="text" id="videoURL"><br>
 <iframe id="playerIframe" width="560" height="315" src="" frameborder="0" allowfullscreen></iframe>
 <div id="playerStats" class="videoMeta"></div>
 <div id="playerDescription" style="margin:10px 0; font-style:italic;"></div>
-
-<!-- Comments -->
-<div id="commentSection">
-  <input type="text" id="commentInput" placeholder="Add a comment" style="width:70%;">
-  <button id="postCommentBtn">Post Comment</button>
-  <div id="commentList" style="margin-top:10px;"></div>
-</div>
-</div>
-<div id="otherVideos"></div>
-</div>
-</div>
-
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
