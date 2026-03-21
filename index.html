@@ -328,18 +328,37 @@ window.playVideo = async function(videoId){
   });
   document.getElementById('otherVideos').innerHTML = htmlOther;
 
-  // Load comments
-  const commentList = document.getElementById('commentList');
-  commentList.innerHTML="";
-  const qC = query(collection(db,"comments"), where("videoId","==",videoId), orderBy("createdAt","asc"));
-  const snapC = await getDocs(qC);
-  snapC.forEach(c=>{
-    const data = c.data();
-    const div = document.createElement("div");
-    div.className = "comment";
-    div.innerHTML = `<span class="username" onclick="showUserProfile('${data.userId}')">${data.user}</span>: ${data.text}`;
-    commentList.appendChild(div);
-  });
+// Load comments
+const commentList = document.getElementById('commentList');
+commentList.innerHTML = "";
+
+const snapshotComments = await getDocs(collection(db,"comments"));
+
+snapshotComments.forEach(c=>{
+  const data = c.data();
+
+  // only show comments for this video
+  if(data.videoId !== videoId) return;
+
+  const div = document.createElement("div");
+  div.className = "comment";
+  div.style.display = "flex";
+  div.style.alignItems = "center";
+  div.style.gap = "6px";
+
+  const avatar = document.createElement("div");
+  avatar.className = "avatar";
+  avatar.style.backgroundImage = `url('${defaultAvatar}')`;
+  avatar.onclick = ()=>showUserProfile(data.userId);
+
+  const text = document.createElement("span");
+  text.innerHTML = `<b style="cursor:pointer;" onclick="showUserProfile('${data.userId}')">${data.user}</b>: ${data.text}`;
+
+  div.appendChild(avatar);
+  div.appendChild(text);
+
+  commentList.appendChild(div);
+});
 };
 
 // Upload video
