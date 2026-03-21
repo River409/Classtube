@@ -5,8 +5,8 @@
 <style>
 body { margin:0; font-family:Arial,sans-serif; background:#fff; }
 .avatar {
-    width:30px; height:30px; border-radius:0; /* square avatars */
-    border:1px solid #888; /* tiny outline like old YouTube */
+    width:30px; height:30px; border-radius:0;
+    border:1px solid #888;
     color:white; display:flex; justify-content:center; align-items:center;
     font-weight:bold; font-family:Arial,sans-serif;
     text-transform:none; cursor:pointer; text-decoration:none;
@@ -74,6 +74,11 @@ Password:<br><input type="password" id="loginPassword"><br><br>
 <h3>Welcome, <span id="userEmail"></span></h3>
 <hr>
 
+<!-- Search Bar -->
+<div id="searchContainer" style="margin-bottom:15px;">
+  <input type="text" id="searchInput" placeholder="Search videos or users..." style="width:50%; padding:5px;">
+</div>
+
 <div class="tabButtons">
   <button id="videosTab">Videos</button>
   <button id="peopleTab">People</button>
@@ -110,6 +115,7 @@ Join date: <span id="profileJoinDate"></span><br><br>
 <!-- Upload Video (hidden on other profiles) -->
 <div id="uploadSection">
 Title:<br><input type="text" id="videoTitle"><br>
+Description:<br><textarea id="videoDescription" rows="3" cols="40"></textarea><br>
 Video URL:<br><input type="text" id="videoURL"><br>
 <input type="button" value="Post Video" id="postVideoBtn"><br>
 </div>
@@ -123,6 +129,7 @@ Video URL:<br><input type="text" id="videoURL"><br>
 <div id="playerUploader" style="display:flex; align-items:center; gap:8px;"></div>
 <iframe id="playerIframe" width="560" height="315" src="" frameborder="0" allowfullscreen></iframe>
 <div id="playerStats" class="videoMeta"></div>
+<div id="playerDescription" style="margin:10px 0; font-style:italic;"></div>
 </div>
 <div id="otherVideos"></div>
 </div>
@@ -146,6 +153,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 let currentUser = null;
+let currentVideoId = null;
 
 // Default Avatar
 const defaultAvatar = "https://i.redd.it/high-resolution-remakes-of-the-old-default-youtube-avatar-v0-bgwxf7bec4ob1.png?width=2160&format=png&auto=webp&s=2bdfee069c06fd8939b9c2bff2c9917ed04771af";
@@ -204,21 +212,12 @@ function showSection(section){
 }
 
 // Tabs
-document.getElementById('videosTab').onclick = ()=>{
-  document.getElementById('videosSection').style.display="block";
-  document.getElementById('peopleSection').style.display="none";
-};
-document.getElementById('peopleTab').onclick = ()=>{
-  document.getElementById('videosSection').style.display="none";
-  document.getElementById('peopleSection').style.display="block";
-};
+document.getElementById('videosTab').onclick = ()=>{ document.getElementById('videosSection').style.display="block"; document.getElementById('peopleSection').style.display="none"; };
+document.getElementById('peopleTab').onclick = ()=>{ document.getElementById('videosSection').style.display="none"; document.getElementById('peopleSection').style.display="block"; };
 
 // Load users
 async function loadUsers(){
-  if(document.getElementById("feedSection").style.display!=="block"){ 
-    document.getElementById('userList').innerHTML=""; 
-    return; 
-  }
+  if(document.getElementById("feedSection").style.display!=="block"){ document.getElementById('userList').innerHTML=""; return; }
   const snapshot = await getDocs(collection(db,"users"));
   let html="<table border='1' cellpadding='5'><tr><th>Avatar</th><th>Username</th><th>Bio</th></tr>";
   snapshot.forEach(doc=>{
@@ -247,7 +246,7 @@ async function loadVideos(){
   document.getElementById('homeThumbnails').innerHTML=html;
 }
 
-// Show user profile (view-only for others)
+// Show user profile
 window.showUserProfile = async function(uid){
   showSection('profile');
   const docSnap = await getDoc(doc(db,"users",uid));
@@ -258,32 +257,28 @@ window.showUserProfile = async function(uid){
   document.getElementById('profileJoinDate').innerText = createdAt.toDateString();
   
   if(uid!==currentUser.uid){
-    // viewing someone else
     document.getElementById('bio').readOnly = true;
     document.getElementById('uploadSection').style.display = "none";
     document.getElementById('saveBioBtn').style.display = "none";
   }else{
-    // own profile
     document.getElementById('bio').readOnly = false;
     document.getElementById('uploadSection').style.display = "block";
     document.getElementById('saveBioBtn').style.display = "inline-block";
   }
-
   document.getElementById('bio').value = data.bio || "";
 
-  // Load that user's videos
   const snapshot = await getDocs(collection(db,"videos"));
-  let html="";
+  let htmlVideos="";
   snapshot.forEach(doc=>{
     const video = doc.data();
     if(video.user===data.username){
-      html+=`<div class="videoTitle" onclick="playVideo('${doc.id}')">${video.title}</div>`;
+      htmlVideos+=`<div class="videoTitle" onclick="playVideo('${doc.id}')">${video.title}</div>`;
     }
   });
-  document.getElementById('userVideos').innerHTML=html;
+  document.getElementById('userVideos').innerHTML=htmlVideos;
 };
 
-// Profile (current user) load
+// Load profile
 async function loadProfile() {
     showSection('profile');
     const docSnap = await getDoc(doc(db, "users",currentUser.uid));
@@ -297,34 +292,47 @@ async function loadProfile() {
         document.getElementById('saveBioBtn').style.display = "inline-block";
     }
 }
+async function loadUserVideos(){
+  if(!currentUser) return;
+  const snapshot = await getDocs(collection(db,"videos"));
+  let html="";
+  snapshot.forEach(doc=>{
+    const video = doc.data();
+    if(video.userId === currentUser.uid){
+      html+=`<div class="videoTitle" onclick="playVideo('${doc.id}')">${video.title}</div>`;
+    }
+  });
+  document.getElementById('userVideos').innerHTML = html;
+}
 
 // Play video
 window.playVideo = async function(videoId){
   showSection("player");
+  currentVideoId = videoId;
   const docSnap = await getDoc(doc(db,"videos",videoId));
   if(!docSnap.exists()) return;
   const data = docSnap.data();
   document.getElementById('playerTitle').innerText = data.title;
-  document.getElementById('playerUploader').innerHTML=
-    `<div class='avatar' style='background-image:url("${defaultAvatar}")'></div>
-     <span>${data.user}</span>`;
+  document.getElementById('playerUploader').innerHTML=`<div class='avatar' style='background-image:url("${defaultAvatar}")'></div><span>${data.user}</span>`;
   document.getElementById('playerIframe').src = data.url.replace("/view","/preview");
+  document.getElementById('playerDescription').innerText = data.description||"";
   const createdAt = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt.seconds*1000);
-  const diffMs = new Date() - createdAt;
-  const diffDays = Math.floor(diffMs/(1000*60*60*24));
-  let agoText = diffDays<30 ? diffDays+" days ago" : Math.floor(diffDays/30)+" months ago";
-  document.getElementById('playerStats').innerText = (data.views||0)+" views • "+agoText;
+  const diffDays = Math.floor((new Date()-createdAt)/(1000*60*60*24));
+  document.getElementById('playerStats').innerText = (data.views||0) + " views • " + (diffDays<30 ? diffDays+" days ago":Math.floor(diffDays/30)+" months ago");
 
-  const q = query(collection(db,"videos"),orderBy("createdAt","desc"));
-  const snapshot = await getDocs(q);
+  // Random 6 videos sidebar
+  const qVid = query(collection(db,"videos"),orderBy("createdAt","desc"));
+  const snapshot = await getDocs(qVid);
+  const allVideos = [];
+  snapshot.forEach(d=>{ if(d.id!==videoId) allVideos.push({id:d.id, data:d.data()}); });
+  const selected = [];
+  while(selected.length<6 && allVideos.length>0){
+    const idx = Math.floor(Math.random()*allVideos.length);
+    selected.push(allVideos[idx]); allVideos.splice(idx,1);
+  }
   let htmlOther="";
-  snapshot.forEach(d=>{
-    if(d.id===videoId) return;
-    const v = d.data();
-    htmlOther+=`<div onclick="playVideo('${d.id}')">
-      <div>${v.title}</div>
-      <iframe width="140" height="80" src="${v.url.replace("/view","/preview")}" frameborder="0"></iframe>
-    </div>`;
+  selected.forEach(v=>{
+    htmlOther+=`<div onclick="playVideo('${v.id}')"><div>${v.data.title}</div><iframe width="140" height="80" src="${v.data.url.replace("/view","/preview")}" frameborder="0"></iframe></div>`;
   });
   document.getElementById('otherVideos').innerHTML = htmlOther;
 };
@@ -333,31 +341,25 @@ window.playVideo = async function(videoId){
 document.getElementById('postVideoBtn').onclick = async ()=>{
   const title = document.getElementById('videoTitle').value.trim();
   const url = document.getElementById('videoURL').value.trim();
+  const description = document.getElementById('videoDescription').value.trim();
   if(!title||!url){ alert("Title and URL required"); return; }
-  await addDoc(collection(db,"videos"),{ title,url,user:currentUser.username,userId:currentUser.uid,createdAt:new Date(),views:0 });
-  document.getElementById('videoTitle').value=""; document.getElementById('videoURL').value="";
+  await addDoc(collection(db,"videos"),{ title,url,description,user:currentUser.username,userId:currentUser.uid,createdAt:new Date(),views:0 });
+  document.getElementById('videoTitle').value=""; 
+  document.getElementById('videoURL').value="";
+  document.getElementById('videoDescription').value="";
   await loadVideos(); alert("Video uploaded!");
 };
 
 // Save bio
 document.getElementById('saveBioBtn').onclick = async () => {
     const bio = document.getElementById('bio').value.trim();
-    try {
-        await updateDoc(doc(db, "users", currentUser.uid), { bio });
-        document.getElementById('profileStatus').innerText = "Bio saved!";
-    } catch (err) {
-        document.getElementById('profileStatus').innerText = "Error saving bio: " + err.message;
-    }
+    try { await updateDoc(doc(db, "users", currentUser.uid), { bio }); document.getElementById('profileStatus').innerText = "Bio saved!"; }
+    catch (err){ document.getElementById('profileStatus').innerText = "Error saving bio: " + err.message; }
 };
 
-// Home/Profile buttons
-document.getElementById("homeBtn").onclick = ()=>{ showSection('feed'); loadVideos(); loadUsers(); };
-document.getElementById("myProfileBtn").onclick = ()=>loadProfile();
-document.getElementById("logoutBtn").onclick = async ()=>await signOut(auth);
+// Search bar
+const searchInput = document.getElementById('searchInput');
+searchInput.addEventListener('input', async () => {
+    const queryText = searchInput.value.toLowerCase();
 
-// Initial
-showSection("login");
-</script>
-
-</body>
-</html>
+    // Filter
