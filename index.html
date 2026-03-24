@@ -3,7 +3,7 @@
 <head>
 <title>Classtube</title>
 <style>
-body { margin:0; font-family:Arial,sans-serif; background:#fff; }
+body { margin:0; font-family:Tahoma,sans-serif; background:#fff; }
 .avatar {
     width:30px; height:30px; border-radius:0;
     border:1px solid #888;
@@ -21,11 +21,13 @@ body { margin:0; font-family:Arial,sans-serif; background:#fff; }
 #otherVideos div { cursor:pointer; display:flex; flex-direction:column; }
 #homeThumbnails { display:flex; flex-wrap:wrap; gap:10px; padding-top:5px; margin-bottom:15px; }
 #homeThumbnails div { cursor:pointer; display:flex; flex-direction:column; width:160px; }
-#homeThumbnails iframe { width:160px; height:90px; }
+#homeThumbnails iframe { width:160px; height:90px; border:1px solid #000; }
 .channelHeader { font-weight:bold; margin-bottom:5px; cursor:pointer; color:blue; }
 .channelBio { font-style:italic; margin-bottom:15px; }
 .tabButtons { margin-bottom:10px; }
-.tabButtons button { margin-right:5px; padding:5px 10px; cursor:pointer; }
+.tabButtons button { margin-right:5px; padding:5px 10px; cursor:pointer; border:2px outset #ccc; background:#ddd; font-weight:bold; }
+button:active { border:2px inset #ccc; }
+table { border:2px solid #000; background:#eee; }
 </style>
 </head>
 <body>
@@ -185,7 +187,6 @@ onAuthStateChanged(auth, async user => {
   await loadUsers();
   await loadVideos();
   await loadProfile();
-  await loadUserVideos();
 });
 
 // SIGNUP/LOGIN/LOGOUT
@@ -237,13 +238,13 @@ async function loadUsers(){
   html+="</table>"; document.getElementById('userList').innerHTML=html;
 }
 
-// LOAD VIDEOS (24 RANDOM FOR HOME)
+// LOAD VIDEOS (25 RANDOM)
 async function loadVideos(){
   const snapshot = await getDocs(collection(db,"videos"));
   const allVideos = [];
   snapshot.forEach(doc=>allVideos.push({id:doc.id,data:doc.data()}));
   const selected=[];
-  while(selected.length<24 && allVideos.length>0){
+  while(selected.length<25 && allVideos.length>0){
     const idx=Math.floor(Math.random()*allVideos.length);
     selected.push(allVideos[idx]);
     allVideos.splice(idx,1);
@@ -273,7 +274,7 @@ window.playVideo=async function(videoId){
   const diffDays = Math.floor((new Date()-createdAt)/(1000*60*60*24));
   document.getElementById('playerStats').innerText=(data.views||0)+" views • "+(diffDays<30?diffDays+" days ago":Math.floor(diffDays/30)+" months ago");
 
-  // RANDOM 6 VIDEOS IN SIDEBAR
+  // RANDOM 6 VIDEOS SIDEBAR
   const snapshot=await getDocs(collection(db,"videos"));
   const allVid=[];
   snapshot.forEach(d=>{ if(d.id!==videoId) allVid.push({id:d.id,data:d.data()}); });
@@ -322,10 +323,10 @@ window.showUserProfile=async function(uid){
     document.getElementById('saveBioBtn').style.display="inline-block";
   }
   document.getElementById('bio').value=data.bio||"";
-  await loadUserVideos();
+  await loadUserVideos(uid); // <-- PASS PROFILE UID
 };
 
-// SHOW PROFILE BY NAME (for clickable uploader)
+// SHOW PROFILE BY NAME (clickable uploader)
 window.showUserProfileByName=async function(username){
   const snapshot=await getDocs(collection(db,"users"));
   snapshot.forEach(doc=>{
@@ -348,20 +349,22 @@ async function loadProfile(fromButton=false){
   if(fromButton) showSection('profile');
 }
 
-// LOAD USER VIDEOS
-async function loadUserVideos(){
-  if(!currentUser) return;
+// LOAD USER VIDEOS BY PROFILE UID
+async function loadUserVideos(profileUid){
+  if(!profileUid) return;
   const snapshot=await getDocs(collection(db,"videos"));
   let html="";
   snapshot.forEach(doc=>{
     const video=doc.data();
-    if(video.userId===currentUser.uid) html+=`<div class="videoTitle" onclick="playVideo('${doc.id}')">${video.title}</div>`;
+    if(video.userId===profileUid){
+      html+=`<div class="videoTitle" onclick="playVideo('${doc.id}')">${video.title}</div>`;
+    }
   });
   document.getElementById('userVideos').innerHTML=html;
 }
 
 // SEARCH
-document.getElementById('searchInput').addEventListener('input', async ()=>{
+document.getElementById('searchInput').addEventListener('input',async ()=>{
   const queryText=document.getElementById('searchInput').value.toLowerCase();
   const videosSnap=await getDocs(collection(db,"videos"));
   let html="";
