@@ -266,6 +266,10 @@ window.playVideo=async function(videoId){
   const docSnap=await getDoc(doc(db,"videos",videoId));
   if(!docSnap.exists()) return;
   const data=docSnap.data();
+// Increment views
+const newViews = (data.views || 0) + 1;
+await updateDoc(doc(db,"videos",videoId), { views: newViews });
+data.views = newViews;
   document.getElementById('playerTitle').innerText=data.title;
   document.getElementById('playerUploader').innerHTML=`<div class='avatar' style='background-image:url("${defaultAvatar}")'></div><span class='channelHeader' onclick="showUserProfileByName('${data.user}')">${data.user}</span>`;
   document.getElementById('playerIframe').src=data.url.replace("/view","/preview");
