@@ -8,7 +8,7 @@
 ------------------------ */
 body {
     margin: 0;
-    font-family: Verdana, Geneva, sans-serif; /* Late 2000s web feel */
+    font-family: Tahoma, sans-serif; /* Late 2000s web feel */
     background: #f9f9f9;
     color: #333;
 }
@@ -456,16 +456,16 @@ document.getElementById('saveBioBtn').onclick=async ()=>{
 // LOAD USERS
 async function loadUsers(){
   const snapshot=await getDocs(collection(db,"users"));
-  let html="<table border='1' cellpadding='5'><tr><th>Avatar</th><th>Username</th><th>Bio</th></tr>";
-  snapshot.forEach(doc=>{
-    const data=doc.data();
+let html="<table border='1' cellpadding='5'><tr><th>Username</th><th>Bio</th></tr>";
+snapshot.forEach(doc=>{
+    const data = doc.data();
     html+=`<tr onclick="showUserProfile('${doc.id}')">
-      <td>${createAvatar(data.username).outerHTML}</td>
       <td>${data.username}</td>
       <td>${data.bio||""}</td>
     </tr>`;
-  });
-  html+="</table>"; document.getElementById('userList').innerHTML=html;
+});
+html+="</table>";
+document.getElementById('userList').innerHTML=html;
 }
 
 // LOAD VIDEOS (24 RANDOM)
