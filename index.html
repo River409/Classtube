@@ -3,73 +3,77 @@
 <head>
 <title>Classtube</title>
 <style>
+.avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 2px;
+    border: 1px solid #888;
+    background-size: cover;
+    background-position: center;
+    display: inline-block;
+}
+#headerLinks a {
+    font-size: 17px;      /* bigger text */
+    font-weight: bold;
+    margin-right: 12px;   /* more spacing */
+}
+#watermark {
+    position: absolute;
+    top: 8px;          /* moved to top */
+    left: 10px;        /* moved to left */
+    width: 120px;
+    opacity: 0.75;
+    pointer-events: none;
+}
+#postVideoBtn {
+    padding: 6px 14px;
+    background: linear-gradient(#6dbf4b, #4e9e32);
+    color: white;
+    font-weight: bold;
+    border: 1px solid #3e7f28;
+    border-radius: 1px;
+    cursor: pointer;
+}
+
+#postVideoBtn:hover {
+    background: linear-gradient(#7ed957, #5fbf3f);
+}
 /* =========================
-   GLOBAL / BODY
+   GENERAL
 ========================= */
 body {
     margin: 0;
-    font-family: Arial, Helvetica, sans-serif;
-    background: #e9e9e9;
+    font-family:  Verdana, sans-serif;
+    background: #f1f1f1;
     color: #333;
 }
 
 /* =========================
-   HEADER BAR
+   HEADER
 ========================= */
-table {
+#headerTable {
     width: 100%;
-    border-collapse: collapse;
-    background: linear-gradient(#f8f8f8, #e2e2e2);
-    border-bottom: 1px solid #bbb;
+    border: none;
+    background: linear-gradient(#f8f8f8, #e6e6e6);
+    border-bottom: 1px solid #ccc;
+    padding: 6px 10px;
 }
 
-b {
-    font-size: 20px;
+#logoImg {
+    height: 60px;
+    vertical-align: middle;
 }
 
-/* =========================
-   NAVIGATION (GREEN BUTTONS)
-========================= */
-#headerLinks {
-    text-align: center;
-    margin-top: 8px;
-}
-
+/* Header links */
 #headerLinks a {
-    display: inline-block;
-    padding: 6px 14px;
-    margin: 0 6px;
-    background: linear-gradient(#6dbf4b, #4e9e32);
-    color: #fff;
-    font-weight: bold;
+    color: #0066cc;
     text-decoration: none;
-    border: 1px solid #3e7f28;
-    border-radius: 2px;
-    font-size: 14px;
+    font-size: 13px;
+    margin-right: 10px;
 }
 
 #headerLinks a:hover {
-    background: linear-gradient(#7ed957, #5fbf3f);
-}
-
-/* =========================
-   USER PROFILE (TOP RIGHT)
-========================= */
-#userProfile {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-#userAvatar {
-    width: 50px;
-    height: 50px;
-    border: 1px solid #888;
-}
-
-#usernameDisplay {
-    font-size: 16px;
-    font-weight: bold;
+    text-decoration: underline;
 }
 
 /* =========================
@@ -77,10 +81,10 @@ b {
 ========================= */
 button, input[type="button"] {
     font-size: 12px;
-    padding: 6px 12px;
+    padding: 5px 10px;
     border: 1px solid #999;
-    border-radius: 2px;
-    background: linear-gradient(#ffffff, #dcdcdc);
+    border-radius: 1px;
+    background: linear-gradient(#ffffff, #dddddd);
     cursor: pointer;
 }
 
@@ -88,20 +92,8 @@ button:hover, input[type="button"]:hover {
     background: linear-gradient(#ffffff, #eeeeee);
 }
 
-/* Upload button (green) */
-#postVideoBtn {
-    background: linear-gradient(#6dbf4b, #4e9e32);
-    color: white;
-    font-weight: bold;
-    border: 1px solid #3e7f28;
-}
-
-#postVideoBtn:hover {
-    background: linear-gradient(#7ed957, #5fbf3f);
-}
-
 /* =========================
-   INPUTS / FORMS
+   INPUTS
 ========================= */
 input, textarea {
     border: 1px solid #aaa;
@@ -112,16 +104,7 @@ input, textarea {
 }
 
 /* =========================
-   SEARCH BAR
-========================= */
-#searchInput {
-    width: 50%;
-    padding: 6px;
-    border: 1px solid #999;
-}
-
-/* =========================
-   VIDEO GRID (HOME)
+   VIDEO GRID
 ========================= */
 #homeThumbnails {
     display: flex;
@@ -133,31 +116,26 @@ input, textarea {
     width: 160px;
     background: #fff;
     border: 1px solid #ccc;
+    border-radius: 4px;
     padding: 4px;
     box-shadow: 0 1px 2px rgba(0,0,0,0.15);
     cursor: pointer;
 }
 
 #homeThumbnails iframe {
-    border: 1px solid #999;
+    border-radius: 3px;
 }
 
-/* Video title */
+/* Titles */
 .videoTitle {
     font-size: 13px;
     font-weight: bold;
-    color: #0033cc;
+    color: #0066cc;
     margin-top: 4px;
 }
 
 .videoTitle:hover {
     text-decoration: underline;
-}
-
-/* Video meta */
-.videoMeta {
-    color: #777;
-    font-size: 12px;
 }
 
 /* =========================
@@ -168,18 +146,32 @@ input, textarea {
     gap: 20px;
 }
 
-#videoPlayerMain {
-    flex: 2;
-}
-
 #videoPlayerMain iframe {
-    border: 1px solid #999;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    border-radius: 4px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+#headerLinks {
+    margin-top: 10px;
 }
 
-/* Sidebar videos */
+#headerLinks a {
+    display: inline-block;
+    padding: 6px 14px;
+    margin: 0 5px;
+    background: linear-gradient(#6dbf4b, #4e9e32);
+    color: white;
+    font-weight: bold;
+    text-decoration: none;
+    border: 1px solid #3e7f28;
+    border-radius: 3px;
+    font-size: 13px;
+}
+
+#headerLinks a:hover {
+    background: linear-gradient(#7ed957, #5fbf3f);
+}
+/* Sidebar */
 #otherVideos {
-    flex: 1;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -188,32 +180,23 @@ input, textarea {
 #otherVideos div {
     background: #fff;
     border: 1px solid #ccc;
+    border-radius: 3px;
     padding: 4px;
     cursor: pointer;
 }
 
 /* =========================
-   PROFILE PAGE
-========================= */
-#profileSection {
-    background: #fff;
-    padding: 15px;
-    border: 1px solid #bbb;
-}
-
-/* =========================
-   USER LIST (PEOPLE TAB)
+   USER TABLE
 ========================= */
 #userList table {
     width: 100%;
     border-collapse: collapse;
     font-size: 14px;
-    background: #fff;
 }
 
 #userList th {
-    background: #e0e0e0;
-    border: 1px solid #bbb;
+    background: #eaeaea;
+    border: 1px solid #ccc;
     padding: 6px;
 }
 
@@ -227,26 +210,23 @@ input, textarea {
 }
 
 /* =========================
-   AVATAR (VIDEO PLAYER)
+   PROFILE
 ========================= */
-.avatar {
-    width: 40px;
-    height: 40px;
-    border: 1px solid #888;
-    background-size: cover;
-    background-position: center;
+#profileSection {
+    background: #fff;
+    padding: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
 }
 
 /* =========================
-   WATERMARK (TOP LEFT VIDEO)
+   SEARCH BAR
 ========================= */
-#watermark {
-    position: absolute;
-    top: 8px;
-    left: 10px;
-    width: 115px;
-    opacity: 0.75;
-    pointer-events: none;
+#searchInput {
+    width: 50%;
+    padding: 6px;
+    border: 1px solid #aaa;
+    border-radius: 3px;
 }
 
 /* =========================
@@ -256,13 +236,13 @@ input, textarea {
     margin-top: 40px;
     padding: 12px;
     text-align: center;
-    background: #e2e2e2;
-    border-top: 1px solid #bbb;
+    background: #e6e6e6;
+    border-top: 1px solid #ccc;
     font-size: 12px;
 }
 
 #footer a {
-    color: #0033cc;
+    color: #0066cc;
     text-decoration: none;
 }
 
